@@ -1,5 +1,9 @@
 # Day 11 — Controlled Agent Security (2026)
 
+> **Học viên:** Bùi Thế Anh — MSSV **2A202603546**
+>
+> **Lớp:** K5-L3A
+>
 > 👤 **Hình thức:** bài tập **cá nhân** (1 người / 1 MSSV).  
 > 🎯 **Mục tiêu:** đóng vai **Blue Team** để học cách xây Guardrails phòng thủ, rồi đóng vai **Red Team** để tấn công agent **Red** hoặc **Red Advance**.  
 > ✅ Làm theo **Checkpoint 1 → 5** trong [`CHECKPOINTS.md`](CHECKPOINTS.md) · nộp theo [`SUBMISSION.md`](SUBMISSION.md).
@@ -162,3 +166,22 @@ pip install -r requirements.txt
 Rồi mở [`CHECKPOINTS.md`](CHECKPOINTS.md) và làm lần lượt Checkpoint 1 → 5.
 
 Nộp theo [`SUBMISSION.md`](SUBMISSION.md) · Quy định: [`RULES.md`](RULES.md).
+
+---
+
+## Cách chạy nhanh (bản nộp)
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8 = "1"   # nếu console Windows báo UnicodeEncodeError
+python src/main.py --part 2
+python src/main.py --part 3
+python src/main.py --part 4
+pytest tests/smoke tests/public -q
+python scripts/grade.py --submission-dir . --out outputs/grade_report.json
+```
+
+> **Ghi chú môi trường:** OpenRouter đã ngừng cung cấp model Blue
+> `liquid/lfm-2.5-2.6b:free` (404). Code giữ nguyên model khóa theo lab;
+> các câu safe vẫn vượt qua guardrails (`blocked: false`), preview LLM có thể
+> ghi `preview unavailable`. Không đổi model Blue để tránh sai yêu cầu.
