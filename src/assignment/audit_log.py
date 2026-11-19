@@ -5,7 +5,8 @@ Records every interaction for forensics. Never blocks by itself —
 other layers catch attacks; this layer makes them reviewable.
 """
 from __future__ import annotations
-
+import time
+import uuid
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,8 +27,14 @@ class AuditLogPlugin:
         self._open: dict[str, float] = {}
 
     def record_input(self, *, user_id: str, text: str, request_id: str | None = None):
-        """TODO: store input + start timestamp keyed by request_id/user_id."""
-        raise NotImplementedError("Implement AuditLogPlugin.record_input")
+        request_id = request_id or uuid.uuid4().hex
+        self._open[request_id] = {
+            "user_id": user_id,
+            "input": text,
+            "started_at": utc_now_iso(),
+            "started_monotonic": time.monotonic(),
+        }
+        return request_id
 
     def record_output(
         self,
@@ -38,15 +45,36 @@ class AuditLogPlugin:
         layer: str | None = None,
         request_id: str | None = None,
     ):
-        """TODO: store output, layer decision, latency; append to self.logs."""
-        raise NotImplementedError("Implement AuditLogPlugin.record_output")
+        request_id = request_id or (
+            next(reversed(self._open), None) if self._open else None
+        )
+        entry = self._open.pop(request_id, {}) if request_id else {}
+        started = entry.get("started_monotonic")
+        latency_ms = (
+            (time.monotonic() - started) * 1000 if started is not None else 0.0
+        )
+
+        self.logs.append({
+            "request_id": request_id,
+            "user_id": entry.get("user_id", user_id),
+            "input": entry.get("input", ""),
+            "output": text,
+            "blocked": bool(blocked),
+            "layer": layer,
+            "started_at": entry.get("started_at", utc_now_iso()),
+            "finished_at": utc_now_iso(),
+            "latency_ms": round(latency_ms, 2),
+        })
+        return request_id
 
     def export_json(self, filepath: str | None = None):
-        """Write logs to disk (JSON array) under repo-root ``outputs/`` by default."""
-        # TODO: path = filepath or default_audit_log_path()
-        #       ensure parent dirs exist, dump self.logs with indent=2
-        _ = filepath or default_audit_log_path()
-        raise NotImplementedError("Implement AuditLogPlugin.export_json")
+        path = Path(filepath or default_audit_log_path())
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(self.logs, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return path
 
 
 def utc_now_iso() -> str:
