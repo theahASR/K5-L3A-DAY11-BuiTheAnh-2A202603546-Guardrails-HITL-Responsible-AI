@@ -92,7 +92,15 @@ async def part4_attacks():
     from attacks.attacks import run_attacks, save_attack_results
 
     red_default, red_default_runner = create_red_agent_default()
-    await test_agent(red_default, red_default_runner)
+    try:
+        await test_agent(red_default, red_default_runner)
+    except Exception as exc:
+        # Provider có thể tạm thời quá tải (503/429). Không chặn cả CP4 vì
+        # run_attacks() đã có retry và tự ghi lỗi cho từng prompt.
+        print(
+            f"[warn] Quick test failed ({type(exc).__name__}). "
+            "Tiếp tục chạy attack; lỗi tạm thời sẽ được retry."
+        )
 
     print("\n--- Attacks on Red ---")
     unsafe_results = await run_attacks(
